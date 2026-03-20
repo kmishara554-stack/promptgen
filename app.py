@@ -1,92 +1,73 @@
 import streamlit as st
+import requests
+from deep_translator import GoogleTranslator
 
 # Page Config
-st.set_page_config(page_title="Pro FB AI Designer", page_icon="🎨", layout="centered")
+st.set_page_config(page_title="Sinhala AI Designer", page_icon="🎨")
 
-# Custom CSS - iPhone එකට ගැලපෙන ලස්සන UI එකක්
-st.markdown("""
-    <style>
-    .main { background-color: #f0f2f6; }
-    .stButton>button {
-        width: 100%;
-        border-radius: 10px;
-        height: 3em;
-        background-color: #007bff;
-        color: white;
-        font-weight: bold;
-    }
-    .stTextInput>div>div>input { border-radius: 8px; }
-    </style>
-    """, unsafe_allow_html=True)
-
-# Session State for History
-if 'history' not in st.session_state:
-    st.session_state.history = []
+# --- සරල Translator එකක් ---
+def translate_to_english(text):
+    try:
+        translated = GoogleTranslator(source='auto', target='en').translate(text)
+        return translated
+    except:
+        return text
 
 def main():
-    st.title("🎯 Pro FB AI Prompt Maker")
-    st.write("වෘත්තීය මට්ටමේ Facebook Post එකක් සඳහා අවශ්‍ය සියල්ල මෙතනින්.")
+    st.title("🎨 Sinhala AI Post Designer")
+    st.write("සල්ලි වියදම් කරන්නේ නැතුව Image එකත් එක්කම Post හදාගන්න.")
 
-    # 1. Category Selection
-    category = st.selectbox("මොන වගේ Post එකක්ද? (Category)", 
-                            ["General", "Food & Restaurant", "Real Estate", "Tech & Gadgets", "Fashion & Beauty", "Education"])
+    # 1. Topic/Subject (සිංහලෙන් හෝ ඉංග්‍රීසියෙන්)
+    user_input = st.text_input("ඔයාගේ පෝස්ට් එක ගැන කෙටියෙන් ලියන්න (සිංහලෙන් වුණත් පුළුවන්)", placeholder="උදා: රසවත් බර්ගර් එකක්, ලස්සන ගෙයක්...")
 
-    # 2. Basic Inputs
+    # 2. Localized Templates
+    template = st.selectbox("මොන වගේ එකක්ද?", [
+        "Normal (General)", 
+        "Sri Lankan Food Style", 
+        "Avurudu/Festival Theme", 
+        "Business Promotion", 
+        "WhatsApp Status Style"
+    ])
+
     col1, col2 = st.columns(2)
     with col1:
-        subject = st.text_input("Post එකේ ප්‍රධාන දේ", placeholder="උදා: Burger, New House")
-        mood = st.selectbox("Mood", ["Luxury", "Energetic", "Cozy", "Professional", "Minimalist"])
-    
+        mood = st.selectbox("Mood", ["Luxury", "Vibrant", "Dark & Moody", "Cinematic"])
     with col2:
-        colors = st.text_input("වර්ණ (Colors)", placeholder="Gold, White, Black")
-        aspect_ratio = st.selectbox("ප්‍රමාණය", ["1:1 (Square)", "4:5 (Portrait)", "16:9 (Landscape)"])
+        ratio = st.selectbox("Size", ["1:1", "16:9", "9:16"])
 
-    # 3. Advanced Features
-    with st.expander("🛠️ තව විස්තර එකතු කරන්න (Advanced)"):
-        lighting = st.select_slider("Lighting", options=["Natural", "Studio", "Cinematic", "Neon", "Soft"])
-        negative_prompt = st.text_area("අයින් කරන්න ඕනේ දේවල් (Negative Prompt)", 
-                                       value="blurry, distorted, low resolution, ugly, messy text, extra fingers")
+    if st.button("Generate & View Image 🚀", use_container_width=True):
+        if user_input:
+            with st.spinner('පොඩ්ඩක් ඉන්න, වැඩේ කෙරෙනවා...'):
+                # සිංහලෙන් ලිව්වා නම් translate කරනවා
+                english_subject = translate_to_english(user_input)
+                
+                # Template එක අනුව prompt එක හැදීම
+                templates_dict = {
+                    "Sri Lankan Food Style": "Traditional Sri Lankan food style, highly detailed, professional food photography, warm lighting",
+                    "Avurudu/Festival Theme": "Traditional Sri Lankan cultural festival style, vibrant colors, cultural motifs, celebratory mood",
+                    "Business Promotion": "Clean professional corporate design, minimal, modern marketing style",
+                    "WhatsApp Status Style": "Highly aesthetic, portrait photography, artistic bokeh",
+                    "Normal (General)": "Professional digital art style"
+                }
 
-    # Prompt එක හදන Logic එක
-    if st.button("Generate Pro Prompt 🚀"):
-        if subject:
-            # Category එක අනුව අමතර විස්තර එකතු කිරීම
-            extra_details = {
-                "Food & Restaurant": "high-end food photography, macro shot, steam, appetizing colors, depth of field",
-                "Real Estate": "architectural photography, wide angle, bright interiors, blue sky background",
-                "Fashion & Beauty": "high fashion editorial, professional model, sharp focus, magazine style",
-                "Tech & Gadgets": "clean tech product shot, futuristic lighting, sleek surfaces",
-                "General": ""
-            }
+                final_prompt = f"{english_subject}, {templates_dict[template]}, {mood} mood, high resolution, 8k --ar {ratio}"
+                
+                # --- FREE IMAGE GENERATION (Pollinations API) ---
+                # මේක සල්ලි යන්නේ නැති ලේසිම ක්‍රමය
+                encoded_prompt = requests.utils.quote(final_prompt)
+                image_url = f"https://image.pollinations.ai/prompt/{encoded_prompt}?width=1024&height=1024&nologo=true"
 
-            ar_val = aspect_ratio.split(" ")[0]
-            
-            final_prompt = (
-                f"A professional {category} Facebook post design of {subject}. "
-                f"Style: {mood}. Lighting: {lighting}. Colors: {colors if colors else 'natural'}. "
-                f"{extra_details.get(category, '')}. High resolution, 8k, social media optimized. "
-                f"--ar {ar_val}"
-            )
+                st.divider()
+                st.subheader("හදපු Prompt එක:")
+                st.code(final_prompt)
 
-            # Save to History
-            st.session_state.history.append(final_prompt)
-
-            # Display Result
-            st.success("මෙන්න ඔයාගේ Prompt එක:")
-            st.code(final_prompt)
-            
-            st.write("**Negative Prompt:**")
-            st.info(negative_prompt)
+                # Image එක පෙන්වීම
+                st.image(image_url, caption="Generated by Free AI", use_container_width=True)
+                
+                # Download link for Image
+                st.markdown(f"[📥 Image එක Download කරගන්න]({image_url})")
         else:
-            st.error("කරුණාකර මොකක් ගැනද කියලා ටයිප් කරන්න.")
-
-    # History Section
-    if st.session_state.history:
-        st.divider()
-        st.subheader("📜 කලින් හැදූ Prompt")
-        for i, item in enumerate(reversed(st.session_state.history)):
-            with st.expander(f"Prompt {len(st.session_state.history)-i}"):
-                st.code(item)
+            st.warning("මුලින්ම මොකක් හරි දෙයක් ටයිප් කරන්න මචං!")
 
 if __name__ == "__main__":
     main()
