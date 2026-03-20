@@ -1,65 +1,92 @@
 import streamlit as st
 
-# iPhone එකට ගැලපෙන විදිහට Page එක සැකසීම
-st.set_page_config(page_title="AI Prompt Gen", page_icon="🎨")
+# Page Config
+st.set_page_config(page_title="Pro FB AI Designer", page_icon="🎨", layout="centered")
 
-# කලින් හදපු Prompt මතක තබා ගැනීමට (History)
-if 'prompt_history' not in st.session_state:
-    st.session_state['prompt_history'] = []
+# Custom CSS - iPhone එකට ගැලපෙන ලස්සන UI එකක්
+st.markdown("""
+    <style>
+    .main { background-color: #f0f2f6; }
+    .stButton>button {
+        width: 100%;
+        border-radius: 10px;
+        height: 3em;
+        background-color: #007bff;
+        color: white;
+        font-weight: bold;
+    }
+    .stTextInput>div>div>input { border-radius: 8px; }
+    </style>
+    """, unsafe_allow_html=True)
+
+# Session State for History
+if 'history' not in st.session_state:
+    st.session_state.history = []
 
 def main():
-    st.title("🚀 AI Prompt Generator")
-    st.write("ඔයාගේ Facebook Post එකට අවශ්‍ය AI Prompt එක මෙතනින් හදාගන්න.")
+    st.title("🎯 Pro FB AI Prompt Maker")
+    st.write("වෘත්තීය මට්ටමේ Facebook Post එකක් සඳහා අවශ්‍ය සියල්ල මෙතනින්.")
 
-    # විස්තර ඇතුළත් කරන තැන්
-    subject = st.text_input("Post එක මොකක් ගැනද? (Subject)", placeholder="උදා: Coffee Shop, Gaming PC Sale")
+    # 1. Category Selection
+    category = st.selectbox("මොන වගේ Post එකක්ද? (Category)", 
+                            ["General", "Food & Restaurant", "Real Estate", "Tech & Gadgets", "Fashion & Beauty", "Education"])
+
+    # 2. Basic Inputs
+    col1, col2 = st.columns(2)
+    with col1:
+        subject = st.text_input("Post එකේ ප්‍රධාන දේ", placeholder="උදා: Burger, New House")
+        mood = st.selectbox("Mood", ["Luxury", "Energetic", "Cozy", "Professional", "Minimalist"])
     
-    style = st.selectbox("නිර්මාණ විලාසය (Style)", [
-        "Modern Minimalist", "3D Isometric", "Cyberpunk", 
-        "Vintage Retro", "Professional Corporate", "Photorealistic"
-    ])
+    with col2:
+        colors = st.text_input("වර්ණ (Colors)", placeholder="Gold, White, Black")
+        aspect_ratio = st.selectbox("ප්‍රමාණය", ["1:1 (Square)", "4:5 (Portrait)", "16:9 (Landscape)"])
 
-    colors = st.text_input("වර්ණ (Colors)", placeholder="උදා: Blue and White, Gold and Black")
-    
-    mood = st.selectbox("ස්වභාවය (Mood)", [
-        "Energetic", "Calm & Relaxing", "Luxury", "Urgent (Sales)", "Friendly"
-    ])
+    # 3. Advanced Features
+    with st.expander("🛠️ තව විස්තර එකතු කරන්න (Advanced)"):
+        lighting = st.select_slider("Lighting", options=["Natural", "Studio", "Cinematic", "Neon", "Soft"])
+        negative_prompt = st.text_area("අයින් කරන්න ඕනේ දේවල් (Negative Prompt)", 
+                                       value="blurry, distorted, low resolution, ugly, messy text, extra fingers")
 
-    aspect_ratio = st.radio("ප්‍රමාණය (Aspect Ratio)", ["1:1", "4:5", "16:9"], horizontal=True)
-
-    # Prompt එක Generate කරන Button එක
-    if st.button("Generate Prompt ✨", use_container_width=True):
+    # Prompt එක හදන Logic එක
+    if st.button("Generate Pro Prompt 🚀"):
         if subject:
+            # Category එක අනුව අමතර විස්තර එකතු කිරීම
+            extra_details = {
+                "Food & Restaurant": "high-end food photography, macro shot, steam, appetizing colors, depth of field",
+                "Real Estate": "architectural photography, wide angle, bright interiors, blue sky background",
+                "Fashion & Beauty": "high fashion editorial, professional model, sharp focus, magazine style",
+                "Tech & Gadgets": "clean tech product shot, futuristic lighting, sleek surfaces",
+                "General": ""
+            }
+
+            ar_val = aspect_ratio.split(" ")[0]
+            
             final_prompt = (
-                f"A high-end Facebook post design featuring {subject}. "
-                f"Style: {style}. Colors: {colors if colors else 'balanced'}. "
-                f"Mood: {mood}. Optimized for social media, 8k, professional lighting. "
-                f"--ar {aspect_ratio}"
+                f"A professional {category} Facebook post design of {subject}. "
+                f"Style: {mood}. Lighting: {lighting}. Colors: {colors if colors else 'natural'}. "
+                f"{extra_details.get(category, '')}. High resolution, 8k, social media optimized. "
+                f"--ar {ar_val}"
             )
-            
-            # History එකට එකතු කිරීම
-            st.session_state['prompt_history'].append(final_prompt)
-            
-            st.divider()
-            st.subheader("ඔයාගේ AI Prompt එක:")
-            st.code(final_prompt, language="text")
 
-            # Download Button එක
-            st.download_button(
-                label="මෙම Prompt එක Download කරන්න",
-                data=final_prompt,
-                file_name="ai_prompt.txt",
-                mime="text/plain",
-                use_container_width=True
-            )
+            # Save to History
+            st.session_state.history.append(final_prompt)
+
+            # Display Result
+            st.success("මෙන්න ඔයාගේ Prompt එක:")
+            st.code(final_prompt)
+            
+            st.write("**Negative Prompt:**")
+            st.info(negative_prompt)
         else:
-            st.error("කරුණාකර Subject එක ඇතුළත් කරන්න!")
+            st.error("කරුණාකර මොකක් ගැනද කියලා ටයිප් කරන්න.")
 
-    # කලින් හදපු Prompt බලන්න (History)
-    if st.session_state['prompt_history']:
-        with st.expander("📜 පරණ Prompt බලන්න (History)"):
-            for i, old_prompt in enumerate(reversed(st.session_state['prompt_history'])):
-                st.code(old_prompt)
+    # History Section
+    if st.session_state.history:
+        st.divider()
+        st.subheader("📜 කලින් හැදූ Prompt")
+        for i, item in enumerate(reversed(st.session_state.history)):
+            with st.expander(f"Prompt {len(st.session_state.history)-i}"):
+                st.code(item)
 
 if __name__ == "__main__":
     main()
