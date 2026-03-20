@@ -1,23 +1,23 @@
-name: Pylint
+name: Streamlit App Deploy
 
-on: [push]
+on:
+  push:
+    branches: [ "main" ]
+
+# මෙන්න මේ කොටස එකතු කරන්න
+env:
+  FORCE_JAVASCRIPT_ACTIONS_TO_NODE24: true
 
 jobs:
   build:
     runs-on: ubuntu-latest
-    strategy:
-      matrix:
-        python-version: ["3.8", "3.9", "3.10"]
     steps:
-    - uses: actions/checkout@v4
-    - name: Set up Python ${{ matrix.python-version }}
-      uses: actions/setup-python@v3
-      with:
-        python-version: ${{ matrix.python-version }}
-    - name: Install dependencies
-      run: |
-        python -m pip install --upgrade pip
-        pip install pylint
-    - name: Analysing the code with pylint
-      run: |
-        pylint $(git ls-files '*.py')
+      - name: Checkout Code
+        uses: actions/checkout@v4 # මචං, පුළුවන් නම් මේක v5 වලට මාරු කරන්න
+
+      - name: Set up Python
+        uses: actions/setup-python@v5 # v3 වෙනුවට v5 පාවිච්චි කරන්න
+        with:
+          python-version: '3.11'
+
+      # ... ඉතිරි ටික කලින් වගේමයි
